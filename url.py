@@ -8,19 +8,36 @@ f = {}
 requests = {}
 for url in url_list:
 	s[url] = (socket.socket(socket.AF_INET, socket.SOCK_STREAM))
-	s_[s[url]] = url
-	s[url].connect((url,80))
+	s[url].setblocking(False)
+	s_[s[url]] = [0,url]
 	f[s[url]] = open(url+'.html','w')
-	requests[url] = request+url+'\n\n'
-	s[url].send(requests[url])
+	requests[s[url]] = request+url+'\n\n'
+	#s[url].connect((url,80))
+	#s[url].send(requests[s[url]])
 i = s.values()
+i_ = i[:]
+for url in url_list:
+	try:
+		s[url].connect((url,80))
+	except:
+		pass
 while i != []:
-	r = select.select(i,[],[])
+	r = select.select(i,i_,[])
 	#print r[0]
+	for url in r[1]:
+		if s_[url][0] == 0:
+			print s_[url][1] , 'connected'
+			s_[url][0] = 1
+			i_.remove(url)
+			url.send(requests[url])	
 	for url in r[0]:
-		result = url.recv(1024)
-		if len(result) > 0:
-			f[url].write(result)
-		else:
-			i.remove(url)
+		if s_[url][0] == 1:
+			result = url.recv(1024)
+			if len(result) > 0:
+				f[url].write(result)
+			else:
+				i.remove(url)
+				print s_[url][1], 'finished'
+				f[url].close()
+
 	#print i
